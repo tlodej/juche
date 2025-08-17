@@ -11,5 +11,6 @@ int main(void)
         stepArg(script, "-o "T_OUT);
         stepArg(script, FLAGS);
         stepInput(script, "build.c");
+        stepFakeInput(script, "juche.c");
         stepBuild(script);
 }

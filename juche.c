@@ -12,17 +12,23 @@
 #define T_OUT "\x2"
 
 typedef struct {
+        const char* path;
+        bool is_fake;
+} Input;
+
+typedef struct {
         const char* command;
         const char* output;
         const char* args[MAX_ARGS];
         size_t args_cursor;
-        const char* inputs[MAX_INPUTS];
+        Input inputs[MAX_INPUTS];
         size_t inputs_cursor;
 } Step;
 
 Step* stepInit(const char* command, const char* output);
 void stepArg(Step* step, const char* argument);
-void stepInput(Step* step, const char* input);
+void stepInput(Step* step, const char* path);
+void stepFakeInput(Step* step, const char* path);
 void stepDepend(Step* step, Step* dependency);
 void stepBuild(Step* step);
 
@@ -39,9 +45,14 @@ void stepArg(Step* step, const char* argument)
         step->args[step->args_cursor++] = argument;
 }
 
-void stepInput(Step* step, const char* input)
+void stepInput(Step* step, const char* path)
 {
-        step->inputs[step->inputs_cursor++] = input;
+        step->inputs[step->inputs_cursor++] = (Input){path, false};
+}
+
+void stepFakeInput(Step* step, const char* path)
+{
+        step->inputs[step->inputs_cursor++] = (Input){path, true};
 }
 
 void stepDepend(Step* step, Step* dependency)
@@ -59,10 +70,9 @@ uint64_t getTimestamp(const char *path) {
 static void printInputs(Step* step)
 {
         for (size_t i = 0; i < step->inputs_cursor;) {
-                printf("%s", step->inputs[i++]);
-                if (i < step->inputs_cursor) {
-                        printf(" ");
-                }
+                Input input = step->inputs[i++];
+                if (input.is_fake) continue;
+                printf("%s ", input.path);
         }
 }
 
@@ -89,7 +99,7 @@ void stepBuild(Step* step)
         bool should_rebuild = false;
         
         for (size_t i = 0; i < step->inputs_cursor; ++i) {
-                uint64_t ts = getTimestamp(step->inputs[i]);
+                uint64_t ts = getTimestamp(step->inputs[i].path);
                 should_rebuild = should_rebuild ? 1 : ts > output_ts;
         }
 
