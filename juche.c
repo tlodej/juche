@@ -8,8 +8,10 @@
 #include <time.h>
 #include <sys/stat.h>
 
-#define T_IN "\x1"
-#define T_OUT "\x2"
+// Will be replaced with output file in argument string
+#define T_OUT "\x1"
+// This one with space-separated input files
+#define T_IN "\x2"
 
 typedef struct {
         const char* path;
@@ -26,10 +28,18 @@ typedef struct {
 } Step;
 
 Step* stepInit(const char* command, const char* output);
+
 void stepArg(Step* step, const char* argument);
+
 void stepInput(Step* step, const char* path);
+
+// Fake input file. Will not be included in build,
+// but will cause a rebuild if modified.
 void stepFakeInput(Step* step, const char* path);
+
 void stepDepend(Step* step, Step* dependency);
+
+// Prints finalized build command to stdout.
 void stepBuild(Step* step);
 
 Step* stepInit(const char* command, const char* output)
