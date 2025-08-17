@@ -2,7 +2,11 @@
 #define MAX_INPUTS 64
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
+#include <time.h>
+#include <sys/stat.h>
 
 #define T_IN "\x1"
 #define T_OUT "\x2"
@@ -46,6 +50,12 @@ void stepDepend(Step* step, Step* dependency)
         stepBuild(dependency);
 }
 
+uint64_t getTimestamp(const char *path) {
+        struct stat attr;
+        stat(path, &attr);
+        return attr.st_mtime;
+}
+
 static void printInputs(Step* step)
 {
         for (size_t i = 0; i < step->inputs_cursor;) {
@@ -75,6 +85,16 @@ static void parseArg(Step* step, const char* arg)
 
 void stepBuild(Step* step)
 {
+        uint64_t output_ts = getTimestamp(step->output);
+        bool should_rebuild = false;
+        
+        for (size_t i = 0; i < step->inputs_cursor; ++i) {
+                uint64_t ts = getTimestamp(step->inputs[i]);
+                should_rebuild = should_rebuild ? 1 : ts > output_ts;
+        }
+
+        if (!should_rebuild) return;
+
         printf("%s ", step->command);
 
         for (size_t i = 0; i < step->args_cursor; ++i) {
