@@ -66,43 +66,41 @@ void stepDepend(Step* step, Step* dependency);
 // Prints finalized build command to stdout.
 void stepBuild(Step* step);
 
-Step* stepInit(const char* command, const char* output)
-{
+/*
+ * Implementation
+ */
+
+Step* stepInit(const char* command, const char* output) {
         Step* step = calloc(1, sizeof(Step));
         step->command = command;
         step->output = output;
         return step;
 }
 
-void stepArg(Step* step, const char* argument)
-{
+void stepArg(Step* step, const char* argument) {
         step->args[step->args_cursor++] = argument;
 }
 
-void stepInput(Step* step, const char* path)
-{
+void stepInput(Step* step, const char* path) {
         step->inputs[step->inputs_cursor++] = (Input){path, false};
 }
 
-void stepFakeInput(Step* step, const char* path)
-{
+void stepFakeInput(Step* step, const char* path) {
         step->inputs[step->inputs_cursor++] = (Input){path, true};
 }
 
-void stepDepend(Step* step, Step* dependency)
-{
+void stepDepend(Step* step, Step* dependency) {
         (void)step;
         stepBuild(dependency);
 }
 
-uint64_t getTimestamp(const char *path) {
+static uint64_t getTimestamp(const char *path) {
         struct stat attr;
         stat(path, &attr);
         return attr.st_mtime;
 }
 
-static void printInputs(Step* step)
-{
+static void printInputs(Step* step) {
         for (size_t i = 0; i < step->inputs_cursor;) {
                 Input input = step->inputs[i++];
                 if (input.is_fake) continue;
@@ -110,8 +108,7 @@ static void printInputs(Step* step)
         }
 }
 
-static void parseArg(Step* step, const char* arg)
-{
+static void parseArg(Step* step, const char* arg) {
         size_t len = strlen(arg);
         for (size_t i = 0; i < len; ++i) {
                 char c = arg[i];
@@ -127,8 +124,7 @@ static void parseArg(Step* step, const char* arg)
         printf(" ");
 }
 
-void stepBuild(Step* step)
-{
+void stepBuild(Step* step) {
         uint64_t output_ts = getTimestamp(step->output);
         bool should_rebuild = false;
         
