@@ -49,7 +49,7 @@ void* listGet(struct juche_list* list, size_t index);
 
 struct juche_input {
         const char* path;
-        bool is_fake;
+        bool include;
 };
 
 struct juche_step {
@@ -73,20 +73,20 @@ void stepArg(struct juche_step* step, const char* argument);
 void stepInput(struct juche_step* step, const char* path);
 
 /*
- * Adds fake input file. Program will not be compiled with it,
+ * Adds dependency file. Program will not be compiled with it,
  * but modifying it will cause a rebuild.
  */
-void stepFakeInput(struct juche_step* step, const char* path);
+void stepDepend(struct juche_step* step, const char* path);
 
 /*
- * Compiles `dependency` when compiling step.
+ * Builds `req` along with `step`.
  */
-void stepDepend(struct juche_step* step, struct juche_step* dependency);
+void stepRequire(struct juche_step* step, struct juche_step* req);
 
 /*
- * Looks for #include of local files in inputs and adds those as fake inputs
+ * Looks for #include of local files in inputs and adds those as dependencies.
  */
-void stepAutoFakeInputs(struct juche_step* step);
+void stepAutoDeps(struct juche_step* step);
 
 /*
  * Prints build command to stdout.
@@ -137,17 +137,17 @@ void stepArg(struct juche_step* step, const char* argument) {
 }
 
 void stepInput(struct juche_step* step, const char* path) {
-        struct juche_input inp = {path, false};
-        listPush(&step->inputs, &inp);
-}
-
-void stepFakeInput(struct juche_step* step, const char* path) {
         struct juche_input inp = {path, true};
         listPush(&step->inputs, &inp);
 }
 
-void stepDepend(struct juche_step* step, struct juche_step* dependency) {
-        listPush(&step->deps, dependency);
+void stepDepend(struct juche_step* step, const char* path) {
+        struct juche_input inp = {path, false};
+        listPush(&step->inputs, &inp);
+}
+
+void stepRequire(struct juche_step* step, struct juche_step* req) {
+        listPush(&step->deps, req);
 }
 
 static char* _parseInclude(const char* src, size_t start) {
@@ -184,7 +184,7 @@ static void _findDeps(struct juche_step* step, const char* src, size_t len) {
                         const char* path = _parseInclude(src, i + 1);
 
                         if (path != NULL) {
-                                stepFakeInput(step, path);
+                                stepDep(step, path);
                         }
 
                         start_of_line = false;
@@ -194,7 +194,7 @@ static void _findDeps(struct juche_step* step, const char* src, size_t len) {
         }
 }
 
-void stepAutoFakeInputs(struct juche_step* step) {
+void stepAutoDeps(struct juche_step* step) {
         for (size_t i = 0; i < step->inputs.count;) {
                 struct juche_input* input = listGet(&step->inputs, i++);
 
@@ -223,7 +223,7 @@ static void _spacedInputs(struct juche_step* step) {
         for (size_t i = 0; i < step->inputs.count;) {
                 struct juche_input* input = listGet(&step->inputs, i++);
 
-                if (input->is_fake) continue;
+                if (!input->include) continue;
                 printf("%s ", input->path);
         }
 }

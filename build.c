@@ -11,6 +11,6 @@ int main(void) {
         stepArg(&script, "-o "T_OUT);
         stepArg(&script, FLAGS);
         stepInput(&script, "build.c");
-        stepAutoFakeInputs(&script);
+        stepAutoDeps(&script);
         stepBuild(&script);
 }
