@@ -22,8 +22,6 @@
  * SOFTWARE.
  */
 
-#define MAX_ARGS 64
-#define MAX_INPUTS 64
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -56,10 +54,8 @@ typedef struct {
 typedef struct {
         const char* command;
         const char* output;
-        const char* args[MAX_ARGS];
-        size_t args_cursor;
-        Input inputs[MAX_INPUTS];
-        size_t inputs_cursor;
+        struct juche_list args;
+        struct juche_list inputs;
 } Step;
 
 Step* stepInit(const char* command, const char* output);
@@ -109,22 +105,26 @@ void listPush(struct juche_list* list, void* item) {
 }
 
 Step* stepInit(const char* command, const char* output) {
-        Step* step = calloc(1, sizeof(Step));
+        Step* step = malloc(sizeof(Step));
         step->command = command;
         step->output = output;
+        listInit(&step->args, sizeof(char*));
+        listInit(&step->inputs, sizeof(Input));
         return step;
 }
 
 void stepArg(Step* step, const char* argument) {
-        step->args[step->args_cursor++] = argument;
+        listPush(&step->args, &argument);
 }
 
 void stepInput(Step* step, const char* path) {
-        step->inputs[step->inputs_cursor++] = (Input){path, false};
+        Input inp = {path, false};
+        listPush(&step->inputs, &inp);
 }
 
 void stepFakeInput(Step* step, const char* path) {
-        step->inputs[step->inputs_cursor++] = (Input){path, true};
+        Input inp = {path, true};
+        listPush(&step->inputs, &inp);
 }
 
 void stepDepend(Step* step, Step* dependency) {
@@ -139,8 +139,8 @@ static uint64_t getTimestamp(const char *path) {
 }
 
 static void printInputs(Step* step) {
-        for (size_t i = 0; i < step->inputs_cursor;) {
-                Input input = step->inputs[i++];
+        for (size_t i = 0; i < step->inputs.count;) {
+                Input input = ((Input*)step->inputs.items)[i++];
                 if (input.is_fake) continue;
                 printf("%s ", input.path);
         }
@@ -166,8 +166,9 @@ void stepBuild(Step* step) {
         uint64_t output_ts = getTimestamp(step->output);
         bool should_rebuild = false;
         
-        for (size_t i = 0; i < step->inputs_cursor; ++i) {
-                uint64_t ts = getTimestamp(step->inputs[i].path);
+        for (size_t i = 0; i < step->inputs.count; ++i) {
+                Input inp = ((Input*)step->inputs.items)[i];
+                uint64_t ts = getTimestamp(inp.path);
                 should_rebuild = should_rebuild ? 1 : ts > output_ts;
         }
 
@@ -175,8 +176,9 @@ void stepBuild(Step* step) {
 
         printf("%s ", step->command);
 
-        for (size_t i = 0; i < step->args_cursor; ++i) {
-                parseArg(step, step->args[i]);
+        for (size_t i = 0; i < step->args.count; ++i) {
+                const char* arg = ((char**)step->args.items)[i];
+                parseArg(step, arg);
         }
 
         printf("\n");
