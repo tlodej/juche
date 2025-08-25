@@ -6,11 +6,12 @@
 
 int main(void)
 {
-        struct juche_step* script = stepInit(CC, BUILD"juche");
-        stepArg(script, T_IN);
-        stepArg(script, "-o "T_OUT);
-        stepArg(script, FLAGS);
-        stepInput(script, "build.c");
-        stepFakeInput(script, "juche.c");
-        stepBuild(script);
+        struct juche_step script;
+        stepInit(&script, CC, BUILD"juche");
+        stepArg(&script, T_IN);
+        stepArg(&script, "-o "T_OUT);
+        stepArg(&script, FLAGS);
+        stepInput(&script, "build.c");
+        stepFakeInput(&script, "juche.c");
+        stepBuild(&script);
 }

@@ -58,7 +58,7 @@ struct juche_step {
         struct juche_list inputs;
 };
 
-struct juche_step* stepInit(const char* command, const char* output);
+void stepInit(struct juche_step* step, const char* cmd, const char* output);
 
 void stepArg(struct juche_step* step, const char* argument);
 
@@ -104,13 +104,11 @@ void listPush(struct juche_list* list, void* item) {
         memcpy(items + offset, item, list->item_size);
 }
 
-struct juche_step* stepInit(const char* command, const char* output) {
-        struct juche_step* step = malloc(sizeof(struct juche_step));
-        step->command = command;
+void stepInit(struct juche_step* step, const char* cmd, const char* output) {
+        step->command = cmd;
         step->output = output;
         listInit(&step->args, sizeof(char*));
         listInit(&step->inputs, sizeof(struct juche_input));
-        return step;
 }
 
 void stepArg(struct juche_step* step, const char* argument) {
