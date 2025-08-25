@@ -46,32 +46,32 @@ void listInit(struct juche_list* list, size_t item_size);
 void listFree(struct juche_list* list);
 void listPush(struct juche_list* list, void* item);
 
-typedef struct {
+struct juche_input {
         const char* path;
         bool is_fake;
-} Input;
+};
 
-typedef struct {
+struct juche_step {
         const char* command;
         const char* output;
         struct juche_list args;
         struct juche_list inputs;
-} Step;
+};
 
-Step* stepInit(const char* command, const char* output);
+struct juche_step* stepInit(const char* command, const char* output);
 
-void stepArg(Step* step, const char* argument);
+void stepArg(struct juche_step* step, const char* argument);
 
-void stepInput(Step* step, const char* path);
+void stepInput(struct juche_step* step, const char* path);
 
 // Fake input file. Will not be included in build,
 // but will cause a rebuild if modified.
-void stepFakeInput(Step* step, const char* path);
+void stepFakeInput(struct juche_step* step, const char* path);
 
-void stepDepend(Step* step, Step* dependency);
+void stepDepend(struct juche_step* step, struct juche_step* dependency);
 
 // Prints finalized build command to stdout.
-void stepBuild(Step* step);
+void stepBuild(struct juche_step* step);
 
 /*
  * Implementation
@@ -104,30 +104,30 @@ void listPush(struct juche_list* list, void* item) {
         memcpy(items + offset, item, list->item_size);
 }
 
-Step* stepInit(const char* command, const char* output) {
-        Step* step = malloc(sizeof(Step));
+struct juche_step* stepInit(const char* command, const char* output) {
+        struct juche_step* step = malloc(sizeof(struct juche_step));
         step->command = command;
         step->output = output;
         listInit(&step->args, sizeof(char*));
-        listInit(&step->inputs, sizeof(Input));
+        listInit(&step->inputs, sizeof(struct juche_input));
         return step;
 }
 
-void stepArg(Step* step, const char* argument) {
+void stepArg(struct juche_step* step, const char* argument) {
         listPush(&step->args, &argument);
 }
 
-void stepInput(Step* step, const char* path) {
-        Input inp = {path, false};
+void stepInput(struct juche_step* step, const char* path) {
+        struct juche_input inp = {path, false};
         listPush(&step->inputs, &inp);
 }
 
-void stepFakeInput(Step* step, const char* path) {
-        Input inp = {path, true};
+void stepFakeInput(struct juche_step* step, const char* path) {
+        struct juche_input inp = {path, true};
         listPush(&step->inputs, &inp);
 }
 
-void stepDepend(Step* step, Step* dependency) {
+void stepDepend(struct juche_step* step, struct juche_step* dependency) {
         (void)step;
         stepBuild(dependency);
 }
@@ -138,15 +138,15 @@ static uint64_t getTimestamp(const char *path) {
         return attr.st_mtime;
 }
 
-static void printInputs(Step* step) {
+static void printInputs(struct juche_step* step) {
         for (size_t i = 0; i < step->inputs.count;) {
-                Input input = ((Input*)step->inputs.items)[i++];
+                struct juche_input input = ((struct juche_input*)step->inputs.items)[i++];
                 if (input.is_fake) continue;
                 printf("%s ", input.path);
         }
 }
 
-static void parseArg(Step* step, const char* arg) {
+static void parseArg(struct juche_step* step, const char* arg) {
         size_t len = strlen(arg);
         for (size_t i = 0; i < len; ++i) {
                 char c = arg[i];
@@ -162,12 +162,12 @@ static void parseArg(Step* step, const char* arg) {
         printf(" ");
 }
 
-void stepBuild(Step* step) {
+void stepBuild(struct juche_step* step) {
         uint64_t output_ts = getTimestamp(step->output);
         bool should_rebuild = false;
         
         for (size_t i = 0; i < step->inputs.count; ++i) {
-                Input inp = ((Input*)step->inputs.items)[i];
+                struct juche_input inp = ((struct juche_input*)step->inputs.items)[i];
                 uint64_t ts = getTimestamp(inp.path);
                 should_rebuild = should_rebuild ? 1 : ts > output_ts;
         }

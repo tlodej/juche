@@ -6,7 +6,7 @@
 
 int main(void)
 {
-        Step* script = stepInit(CC, BUILD"juche");
+        struct juche_step* script = stepInit(CC, BUILD"juche");
         stepArg(script, T_IN);
         stepArg(script, "-o "T_OUT);
         stepArg(script, FLAGS);
