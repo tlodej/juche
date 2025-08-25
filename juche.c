@@ -37,6 +37,17 @@
 // This one with space-separated input files
 #define T_IN "\x2"
 
+struct juche_list {
+        void* items;
+        size_t count;
+        size_t capacity;
+        size_t item_size;
+};
+
+void listInit(struct juche_list* list, size_t item_size);
+void listFree(struct juche_list* list);
+void listPush(struct juche_list* list, void* item);
+
 typedef struct {
         const char* path;
         bool is_fake;
@@ -69,6 +80,33 @@ void stepBuild(Step* step);
 /*
  * Implementation
  */
+
+void listInit(struct juche_list* list, size_t item_size) {
+        memset(list, 0, sizeof(*list));
+        list->item_size = item_size;
+}
+
+void listFree(struct juche_list* list) {
+        free(list->items);
+        memset(list, 0, sizeof(*list));
+}
+
+void listPush(struct juche_list* list, void* item) {
+        if (list->count >= list->capacity) {
+                list->capacity *= 2;
+
+                if (list->capacity == 0) {
+                        list->capacity = 32;
+                }
+
+                size_t new_len = list->capacity * list->item_size;
+                list->items = realloc(list->items, new_len);
+        }
+
+        uint8_t* items = list->items;
+        size_t offset = list->count++ * list->item_size;
+        memcpy(items + offset, item, list->item_size);
+}
 
 Step* stepInit(const char* command, const char* output) {
         Step* step = calloc(1, sizeof(Step));
