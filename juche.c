@@ -84,6 +84,11 @@ void stepFakeInput(struct juche_step* step, const char* path);
 void stepDepend(struct juche_step* step, struct juche_step* dependency);
 
 /*
+ * Looks for #include of local files in inputs and adds those as fake inputs
+ */
+void stepAutoFakeInputs(struct juche_step* step);
+
+/*
  * Prints build command to stdout.
  */
 void stepBuild(struct juche_step* step);
@@ -143,6 +148,68 @@ void stepFakeInput(struct juche_step* step, const char* path) {
 
 void stepDepend(struct juche_step* step, struct juche_step* dependency) {
         listPush(&step->deps, dependency);
+}
+
+static char* _parseInclude(const char* src, size_t start) {
+        if (strncmp(src + start, "include", strlen("include")) != 0) {
+                return NULL;
+        }
+        const char* name = src + start + strlen("include") + 1;
+
+        if (name[0] != '"') {
+                return NULL;
+        }
+
+        size_t length = 0;
+
+        while ((name + length)[1] != '"') {
+                length++;
+        }
+
+        char* path = malloc(length + 1);
+        path[length] = 0;
+        memcpy(path, name + 1, length);
+        return path;
+}
+
+static void _findDeps(struct juche_step* step, const char* src, size_t len) {
+        bool start_of_line = true;
+
+        for (size_t i = 0; i < len; ++i) {
+                char c = src[i];
+
+                if (c == '\n') {
+                        start_of_line = true;
+                } else if (c == '#' && start_of_line) {
+                        const char* path = _parseInclude(src, i + 1);
+
+                        if (path != NULL) {
+                                stepFakeInput(step, path);
+                        }
+
+                        start_of_line = false;
+                } else {
+                        start_of_line = false;
+                }
+        }
+}
+
+void stepAutoFakeInputs(struct juche_step* step) {
+        for (size_t i = 0; i < step->inputs.count;) {
+                struct juche_input* input = listGet(&step->inputs, i++);
+
+                FILE* in = fopen(input->path, "r");
+                fseek(in, 0, SEEK_END);
+                size_t len = ftell(in);
+                fseek(in, 0, SEEK_SET);
+                char* src = malloc(len);
+                fread(src, 1, len, in);
+                fclose(in);
+
+                _findDeps(step, src, len - 1);
+
+                free(src);
+        }
 }
 
 static uint64_t _getTimestamp(const char *path) {
