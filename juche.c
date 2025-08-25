@@ -184,7 +184,7 @@ static void _findDeps(struct juche_step* step, const char* src, size_t len) {
                         const char* path = _parseInclude(src, i + 1);
 
                         if (path != NULL) {
-                                stepDep(step, path);
+                                stepDepend(step, path);
                         }
 
                         start_of_line = false;
