@@ -55,6 +55,7 @@ struct juche_step {
         const char* command;
         const char* output;
         struct juche_list args;
+        struct juche_list deps;
         struct juche_list inputs;
 };
 
@@ -117,6 +118,7 @@ void stepInit(struct juche_step* step, const char* cmd, const char* output) {
         step->command = cmd;
         step->output = output;
         listInit(&step->args, sizeof(char*));
+        listInit(&step->deps, sizeof(struct juche_step*));
         listInit(&step->inputs, sizeof(struct juche_input));
 }
 
@@ -135,8 +137,7 @@ void stepFakeInput(struct juche_step* step, const char* path) {
 }
 
 void stepDepend(struct juche_step* step, struct juche_step* dependency) {
-        (void)step;
-        stepBuild(dependency);
+        listPush(&step->deps, dependency);
 }
 
 static uint64_t getTimestamp(const char *path) {
@@ -170,6 +171,10 @@ static void parseArg(struct juche_step* step, const char* arg) {
 }
 
 void stepBuild(struct juche_step* step) {
+        for (size_t i = 0; i < step->deps.count; ++i) {
+                struct juche_step* step = ((struct juche_step**)step->deps.items)[i];
+                stepBuild(step);
+        }
         uint64_t output_ts = getTimestamp(step->output);
         bool should_rebuild = false;
         
