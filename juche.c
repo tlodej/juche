@@ -60,22 +60,31 @@ struct juche_step {
 
 void stepInit(struct juche_step* step, const char* cmd, const char* output);
 
+/*
+ * Adds any number of arguments in any format.
+ */
 void stepArg(struct juche_step* step, const char* argument);
 
+/*
+ * Adds input file.
+ */
 void stepInput(struct juche_step* step, const char* path);
 
-// Fake input file. Will not be included in build,
-// but will cause a rebuild if modified.
+/*
+ * Adds fake input file. Program will not be compiled with it,
+ * but modifying it will cause a rebuild.
+ */
 void stepFakeInput(struct juche_step* step, const char* path);
 
+/*
+ * Compiles `dependency` when compiling step.
+ */
 void stepDepend(struct juche_step* step, struct juche_step* dependency);
 
-// Prints finalized build command to stdout.
-void stepBuild(struct juche_step* step);
-
 /*
- * Implementation
+ * Prints build command to stdout.
  */
+void stepBuild(struct juche_step* step);
 
 void listInit(struct juche_list* list, size_t item_size) {
         memset(list, 0, sizeof(*list));
