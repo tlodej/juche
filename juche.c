@@ -143,12 +143,14 @@ void stepDepend(struct juche_step* step, struct juche_step* dependency) {
 static uint64_t _getTimestamp(const char *path) {
         struct stat attr;
         stat(path, &attr);
-        return attr.st_mtime;
+
+        return (uint64_t)attr.st_mtime;
 }
 
-static void _printInputs(struct juche_step* step) {
+static void _spacedInputs(struct juche_step* step) {
         for (size_t i = 0; i < step->inputs.count;) {
                 struct juche_input input = ((struct juche_input*)step->inputs.items)[i++];
+
                 if (input.is_fake) continue;
                 printf("%s ", input.path);
         }
@@ -160,7 +162,7 @@ static void _parseArg(struct juche_step* step, const char* arg) {
                 char c = arg[i];
 
                 if (c == T_IN[0]) {
-                        _printInputs(step);
+                        _spacedInputs(step);
                 } else if (c == T_OUT[0]) {
                         printf("%s", step->output); 
                 } else {
