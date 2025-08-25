@@ -140,13 +140,13 @@ void stepDepend(struct juche_step* step, struct juche_step* dependency) {
         listPush(&step->deps, dependency);
 }
 
-static uint64_t getTimestamp(const char *path) {
+static uint64_t _getTimestamp(const char *path) {
         struct stat attr;
         stat(path, &attr);
         return attr.st_mtime;
 }
 
-static void printInputs(struct juche_step* step) {
+static void _printInputs(struct juche_step* step) {
         for (size_t i = 0; i < step->inputs.count;) {
                 struct juche_input input = ((struct juche_input*)step->inputs.items)[i++];
                 if (input.is_fake) continue;
@@ -154,13 +154,13 @@ static void printInputs(struct juche_step* step) {
         }
 }
 
-static void parseArg(struct juche_step* step, const char* arg) {
+static void _parseArg(struct juche_step* step, const char* arg) {
         size_t len = strlen(arg);
         for (size_t i = 0; i < len; ++i) {
                 char c = arg[i];
 
                 if (c == T_IN[0]) {
-                        printInputs(step);
+                        _printInputs(step);
                 } else if (c == T_OUT[0]) {
                         printf("%s", step->output); 
                 } else {
@@ -175,12 +175,12 @@ void stepBuild(struct juche_step* step) {
                 struct juche_step* step = ((struct juche_step**)step->deps.items)[i];
                 stepBuild(step);
         }
-        uint64_t output_ts = getTimestamp(step->output);
+        uint64_t output_ts = _getTimestamp(step->output);
         bool should_rebuild = false;
         
         for (size_t i = 0; i < step->inputs.count; ++i) {
                 struct juche_input inp = ((struct juche_input*)step->inputs.items)[i];
-                uint64_t ts = getTimestamp(inp.path);
+                uint64_t ts = _getTimestamp(inp.path);
                 should_rebuild = should_rebuild ? 1 : ts > output_ts;
         }
 
@@ -190,7 +190,7 @@ void stepBuild(struct juche_step* step) {
 
         for (size_t i = 0; i < step->args.count; ++i) {
                 const char* arg = ((char**)step->args.items)[i];
-                parseArg(step, arg);
+                _parseArg(step, arg);
         }
 
         printf("\n");
