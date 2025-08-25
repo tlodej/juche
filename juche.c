@@ -45,6 +45,7 @@ struct juche_list {
 void listInit(struct juche_list* list, size_t item_size);
 void listFree(struct juche_list* list);
 void listPush(struct juche_list* list, void* item);
+void* listGet(struct juche_list* list, size_t index);
 
 struct juche_input {
         const char* path;
@@ -114,6 +115,10 @@ void listPush(struct juche_list* list, void* item) {
         memcpy(items + offset, item, list->item_size);
 }
 
+void* listGet(struct juche_list* list, size_t index) {
+        return (uint8_t*)list->items + (index * list->item_size);
+}
+
 void stepInit(struct juche_step* step, const char* cmd, const char* output) {
         step->command = cmd;
         step->output = output;
@@ -149,10 +154,10 @@ static uint64_t _getTimestamp(const char *path) {
 
 static void _spacedInputs(struct juche_step* step) {
         for (size_t i = 0; i < step->inputs.count;) {
-                struct juche_input input = ((struct juche_input*)step->inputs.items)[i++];
+                struct juche_input* input = listGet(&step->inputs, i++);
 
-                if (input.is_fake) continue;
-                printf("%s ", input.path);
+                if (input->is_fake) continue;
+                printf("%s ", input->path);
         }
 }
 
@@ -174,25 +179,28 @@ static void _parseArg(struct juche_step* step, const char* arg) {
 
 void stepBuild(struct juche_step* step) {
         for (size_t i = 0; i < step->deps.count; ++i) {
-                struct juche_step* step = ((struct juche_step**)step->deps.items)[i];
-                stepBuild(step);
+                struct juche_step** dep = listGet(&step->deps, i);
+                stepBuild(*dep);
         }
+
         uint64_t output_ts = _getTimestamp(step->output);
         bool should_rebuild = false;
         
         for (size_t i = 0; i < step->inputs.count; ++i) {
-                struct juche_input inp = ((struct juche_input*)step->inputs.items)[i];
-                uint64_t ts = _getTimestamp(inp.path);
+                struct juche_input* inp = listGet(&step->inputs, i);
+                uint64_t ts = _getTimestamp(inp->path);
                 should_rebuild = should_rebuild ? 1 : ts > output_ts;
         }
 
-        if (!should_rebuild) return;
+        if (!should_rebuild) {
+                return;
+        }
 
         printf("%s ", step->command);
 
         for (size_t i = 0; i < step->args.count; ++i) {
-                const char* arg = ((char**)step->args.items)[i];
-                _parseArg(step, arg);
+                char** arg = listGet(&step->args, i);
+                _parseArg(step, *arg);
         }
 
         printf("\n");
