@@ -1,5 +1,5 @@
 /*
- * Juche Build System 1.03
+ * Juche Build System 1.04
  * https://github.com/tlodej/juche
  *
  * MIT License
