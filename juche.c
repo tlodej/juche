@@ -153,7 +153,8 @@ void stepDepend(struct juche_step* step, const char* path) {
 }
 
 void stepRequire(struct juche_step* step, struct juche_step* req) {
-        listPush(&step->deps, req);
+        listPush(&step->deps, &req);
+        stepDepend(step, req->output);
 }
 
 static char* _parseInclude(const char* src, size_t start) {
