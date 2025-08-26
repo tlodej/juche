@@ -11,4 +11,4 @@ Bootstrap build system:
 cc ./build.c -o ./build/juche
 
 Run it:
-./build/juche | sh
+./build/juche
