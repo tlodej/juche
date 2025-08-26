@@ -1,5 +1,5 @@
-Juche Build System
-==================
+Juche
+=====
 
 Self-reliant build system. To use it, include `juche.c` in a build script. The
 example provided in `build.c` shows how to make it automatically rebuild itself.

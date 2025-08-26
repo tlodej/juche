@@ -1,4 +1,7 @@
 /*
+ * Juche Build System 1.0
+ * https://github.com/tlodej/juche
+ *
  * MIT License
  * 
  * Copyright (c) 2025 Tymoteusz Łodej
