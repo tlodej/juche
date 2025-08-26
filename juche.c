@@ -1,5 +1,5 @@
 /*
- * Juche Build System 1.02
+ * Juche Build System 1.03
  * https://github.com/tlodej/juche
  *
  * MIT License
@@ -318,6 +318,9 @@ void stepBuild(struct juche_step* step) {
                 }
         }
         printf("\n");
+
+        void* tmp = NULL;
+        listPush(&cmd_args, &tmp);
 
         pid_t pid = fork();
         if (pid == 0) {
