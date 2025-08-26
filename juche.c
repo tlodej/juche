@@ -206,7 +206,7 @@ void stepAutoDeps(struct juche_step* step) {
                 struct juche_input* input = listGet(&step->inputs, i++);
 
                 // Ignore non-C files
-                if (input->path[strlen(input->path)] != 'c') {
+                if (input->path[strlen(input->path) - 1] != 'c') {
                         continue;
                 }
 
