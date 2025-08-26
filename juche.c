@@ -92,7 +92,7 @@ void stepRequire(struct juche_step* step, struct juche_step* req);
 void stepAutoDeps(struct juche_step* step);
 
 /*
- * Prints build command to stdout.
+ * Execute build command.
  */
 void stepBuild(struct juche_step* step);
 
