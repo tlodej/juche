@@ -205,6 +205,11 @@ void stepAutoDeps(struct juche_step* step) {
         for (size_t i = 0; i < step->inputs.count;) {
                 struct juche_input* input = listGet(&step->inputs, i++);
 
+                // Ignore non-C files
+                if (input->path[strlen(input->path)] != 'c') {
+                        continue;
+                }
+
                 FILE* in = fopen(input->path, "r");
                 fseek(in, 0, SEEK_END);
                 size_t len = ftell(in);
