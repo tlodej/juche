@@ -23,12 +23,15 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 // Will be replaced with output file in argument string
 #define T_OUT "\x1"
@@ -219,56 +222,98 @@ static uint64_t _getTimestamp(const char *path) {
         return (uint64_t)attr.st_mtime;
 }
 
-static void _spacedInputs(struct juche_step* step) {
-        for (size_t i = 0; i < step->inputs.count;) {
-                struct juche_input* input = listGet(&step->inputs, i++);
-
-                if (!input->include) continue;
-                printf("%s ", input->path);
-        }
-}
-
-static void _parseArg(struct juche_step* step, const char* arg) {
+static void _parseArg(struct juche_step* step, struct juche_list* list, const
+                char* arg) {
         size_t len = strlen(arg);
-        for (size_t i = 0; i < len; ++i) {
+        char* clone = malloc(len + 1);
+        memcpy(clone, arg, len + 1);
+
+        size_t counter = 0;
+
+        for (size_t i = 0; i <= len; ++i) {
                 char c = arg[i];
 
                 if (c == T_IN[0]) {
-                        _spacedInputs(step);
+                        for (size_t i = 0; i < step->inputs.count;) {
+                                struct juche_input* input =
+                                        listGet(&step->inputs, i++);
+                                if (!input->include) continue;
+                                listPush(list, &input->path);
+                        }
+                        counter = 0;
                 } else if (c == T_OUT[0]) {
-                        printf("%s", step->output); 
+                        listPush(list, &step->output);
+                        counter = 0;
+                } else if (c == ' ') {
+                        clone[i] = 0;
+
+                        if (counter > 0) {
+                                char* a = clone + (i - counter);
+                                listPush(list, &a);
+                        }
+
+                        counter = 0;
+                } else if (c == '\0') {
+                        if (counter > 0) {
+                                char* a = clone + (i - counter);
+                                listPush(list, &a);
+                        }
                 } else {
-                        printf("%c", c);
+                        counter++;
                 }
         }
-        printf(" ");
 }
 
-void stepBuild(struct juche_step* step) {
+static void _buildReqs(struct juche_step* step) {
         for (size_t i = 0; i < step->deps.count; ++i) {
-                struct juche_step** dep = listGet(&step->deps, i);
-                stepBuild(*dep);
+                struct juche_step** req = listGet(&step->deps, i);
+                stepBuild(*req);
         }
+}
 
+static bool _shouldRebuild(struct juche_step* step) {
         uint64_t output_ts = _getTimestamp(step->output);
-        bool should_rebuild = false;
         
         for (size_t i = 0; i < step->inputs.count; ++i) {
                 struct juche_input* inp = listGet(&step->inputs, i);
                 uint64_t ts = _getTimestamp(inp->path);
-                should_rebuild = should_rebuild ? 1 : ts > output_ts;
+
+                if (ts > output_ts) {
+                        return true;
+                }
         }
 
-        if (!should_rebuild) {
+        return false;
+}
+
+void stepBuild(struct juche_step* step) {
+        _buildReqs(step);
+        
+        if (!_shouldRebuild(step)) {
                 return;
         }
 
-        printf("%s ", step->command);
+        struct juche_list cmd_args;
+        listInit(&cmd_args, sizeof(char*));
+
+        listPush(&cmd_args, &step->command);
 
         for (size_t i = 0; i < step->args.count; ++i) {
                 char** arg = listGet(&step->args, i);
-                _parseArg(step, *arg);
+                _parseArg(step, &cmd_args, *arg);
         }
 
+        for (size_t i = 0; i < cmd_args.count; ++i) {
+                char** text = listGet(&cmd_args, i);
+                printf("%s ", *text);
+        }
         printf("\n");
+
+        pid_t pid = fork();
+        if (pid == 0) {
+                execvp(step->command, cmd_args.items);
+                exit(1);
+        } else if (pid > 0) {
+                wait(NULL);
+        }
 }
