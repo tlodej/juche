@@ -1,5 +1,5 @@
 /*
- * Juche Build System 1.01
+ * Juche Build System 1.02
  * https://github.com/tlodej/juche
  *
  * MIT License
@@ -311,7 +311,11 @@ void stepBuild(struct juche_step* step) {
 
         for (size_t i = 0; i < cmd_args.count; ++i) {
                 char** text = listGet(&cmd_args, i);
-                printf("%s ", *text);
+                printf("%s", *text);
+
+                if (i < (cmd_args.count - 1)) {
+                        printf(" ");
+                }
         }
         printf("\n");
 
