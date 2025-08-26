@@ -220,7 +220,10 @@ void stepAutoDeps(struct juche_step* step) {
 
 static uint64_t _getTimestamp(const char *path) {
         struct stat attr;
-        stat(path, &attr);
+
+        if (stat(path, &attr) == -1) {
+                return 0;
+        }
 
         return (uint64_t)attr.st_mtime;
 }
