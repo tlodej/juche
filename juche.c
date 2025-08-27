@@ -36,9 +36,14 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-// Will be replaced with output file in argument string
+/*
+ * Templates to be used inside strings passed to stepArg.
+ * They will be processed only when building step.
+ */
+
+// `output` field of Step
 #define T_OUT "\x1"
-// This one with space-separated input files
+// Space separated paths of inputs marked as `include`
 #define T_IN "\x2"
 
 struct juche_list {
