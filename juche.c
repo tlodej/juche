@@ -179,10 +179,30 @@ static char* _parseInclude(const char* src, size_t start) {
         return path;
 }
 
-static void _findDeps(struct juche_step* step, const char* src, size_t len) {
+static char* _joinPaths(const char* a, const char* b) {
+        size_t a_len = strlen(a);
+        size_t b_len = strlen(b);
+        size_t last_slash_index = 0;
+
+        for (size_t i = 0; i < a_len; ++i) {
+                if (a[i] == '/') {
+                        last_slash_index = i;
+                }
+        }
+
+        char* result = malloc(a_len + b_len + 1);
+
+        memcpy(result, a, last_slash_index + 1);
+        memcpy(result + last_slash_index, b, b_len);
+        result[last_slash_index + b_len + 1] = 0;
+        return result;
+}
+
+static void _findDeps(struct juche_step* step, const char* src, size_t src_len,
+                const char* src_path) {
         bool start_of_line = true;
 
-        for (size_t i = 0; i < len; ++i) {
+        for (size_t i = 0; i < src_len; ++i) {
                 char c = src[i];
 
                 if (c == '\n') {
@@ -191,7 +211,7 @@ static void _findDeps(struct juche_step* step, const char* src, size_t len) {
                         const char* path = _parseInclude(src, i + 1);
 
                         if (path != NULL) {
-                                stepDepend(step, path);
+                                stepDepend(step, _joinPaths(src_path, path));
                         }
 
                         start_of_line = false;
@@ -218,7 +238,7 @@ void stepAutoDeps(struct juche_step* step) {
                 fread(src, 1, len, in);
                 fclose(in);
 
-                _findDeps(step, src, len - 1);
+                _findDeps(step, src, len - 1, input->path);
 
                 free(src);
         }
