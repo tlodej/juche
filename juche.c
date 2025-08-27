@@ -179,7 +179,7 @@ static char* _parseInclude(const char* src, size_t start) {
         return path;
 }
 
-static char* _joinPaths(const char* a, const char* b) {
+static const char* _joinPaths(const char* a, const char* b) {
         size_t a_len = strlen(a);
         size_t b_len = strlen(b);
         size_t last_slash_index = 0;
@@ -188,6 +188,10 @@ static char* _joinPaths(const char* a, const char* b) {
                 if (a[i] == '/') {
                         last_slash_index = i;
                 }
+        }
+
+        if (last_slash_index == 0) {
+                return b;
         }
 
         char* result = malloc(a_len + b_len + 1);
